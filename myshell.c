@@ -9,12 +9,13 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-void pwd_command(void);
-void help_command(void);
-void whoami_command(void);
-void cd_command(void);
-void error(void);
-void addprompt(void);
+#include "myshell.h"
+
+#include "mycommand/pwd_command.h"
+#include "mycommand/help_command.h"
+#include "mycommand/whoami_command.h"
+#include "mycommand/cd_command.h"
+
 void rmdir_command(void);
 void ls_command(void);
 void mkdir_command(void);
@@ -25,16 +26,39 @@ void cat_command(void);
 void touch_command(void);
 void chmod_command(void);
 
+void error(void);
+void addprompt(void);
 void clear_buffer(void);
 
-char recvbuf[1024];
-char sendbuf[1024];
-char workbuf[1024];
-char *tp;
-int i;
-int readnum;
+extern char recvbuf[1024];
+extern char sendbuf[1024];
+extern char workbuf[1024];
+extern char *tp;
+
+typedef struct _cname_func {
+  char* name;
+  void (*func)(void);
+} cname_func;
+
+cname_func cf[] = {
+  {"pwd", pwd_command},
+  {"help",help_command},
+  {"whoami", whoami_command},
+  {"cd", cd_command},
+  {"rmdir", rmdir_command},
+  {"ls", ls_command},
+  {"mkdir", mkdir_command},
+  {"rm", rm_command},
+  {"cp", cp_command},
+  {"mv", mv_command},
+  {"cat", cat_command},
+  {"touch", touch_command},
+  {"chmod", chmod_command},
+};
 
 int main(){
+  int i;
+  int readnum;
 
   while(1){
     readnum = 0;
@@ -51,35 +75,14 @@ int main(){
     tp = strtok(recvbuf," ");
     if(tp == NULL){
       error();
-    }else if(strcmp(tp,"pwd") == 0){
-      pwd_command();
-    }else if(strcmp(tp,"exit") == 0){
-      _exit(0);
-    }else if(strcmp(tp,"help") == 0){
-      help_command();
-    }else if(strcmp(tp,"whoami") == 0){
-      whoami_command();
-    }else if(strcmp(tp,"cd") == 0){
-      cd_command();
-    }else if(strcmp(tp,"rmdir") == 0){
-      rmdir_command();
-    }else if(strcmp(tp,"ls") == 0){
-      ls_command();
-    }else if(strcmp(tp,"mkdir") == 0){
-      mkdir_command();
-    }else if(strcmp(tp,"rm") == 0){
-      rm_command();
-    }else if(strcmp(tp,"cp") == 0){
-      cp_command();
-    }else if(strcmp(tp,"mv") == 0){
-      mv_command();
-    }else if(strcmp(tp,"cat") == 0){
-      cat_command();
-    }else if(strcmp(tp,"touch") == 0){
-      touch_command();
-    }else if(strcmp(tp,"chmod") == 0){
-      chmod_command();
-    }else{
+    }
+    for(i = 0;i < sizeof(cf) / sizeof(cf[0]);i++ ){
+      if(strcmp(tp,cf[i].name) == 0){
+        cf[i].func();
+        break;
+      }
+    }
+    if(i == sizeof(cf) / sizeof(cf[0])){
       sprintf(sendbuf,"%s\n","unknown command");
     }
     write(1, sendbuf, 1024);
@@ -89,6 +92,7 @@ int main(){
 }
 
 void clear_buffer(void){
+  int i = 0;
   for(i = 0; i < 1024; i++){
     sendbuf[i] = '\0';
     recvbuf[i] = '\0';
@@ -131,36 +135,6 @@ void cat_command(void){
   }
   close(fd);
   strcpy(sendbuf,workbuf);
-}
-
-void pwd_command(void){
-  getcwd(workbuf,1024);
-  strcpy(sendbuf,workbuf);
-  strcat(sendbuf,"\n");
-}
-
-void help_command(void){
-  strcat(sendbuf,"Command List\n");
-  strcat(sendbuf,"pwd : Display Process Working Directory\n");
-  strcat(sendbuf,"help : Diplay Help\n");
-  strcat(sendbuf,"whoami : Display Login Name\n");
-  strcat(sendbuf,"cd : Change Process Working Directory\n");
-  strcat(sendbuf,"rmdir : Delete Empty Directory\n");
-  strcat(sendbuf,"ls : List Directory\n");
-  strcat(sendbuf,"mkdir : Create Empty Directory\n");
-  strcat(sendbuf,"rm : Delete File\n");
-  strcat(sendbuf,"cp : Copy File\n");
-  strcat(sendbuf,"mv : Move or Rename File\n");
-}
-
-void whoami_command(void){
-  getlogin_r(sendbuf,1024);
-  strcat(sendbuf,"\n");
-}
-
-void cd_command(void){
-  tp = strtok(NULL," ");
-  chdir(tp);
 }
 
 void cp_command(void){

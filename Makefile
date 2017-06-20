@@ -1,8 +1,19 @@
 #Makefile
 
+EXEC = myshell
+# Add source code
+SRCS = myshell.c mycommand/pwd_command.c mycommand/help_command.c mycommand/whoami_command.c mycommand/cd_command.c
+
+OBJECTS = $(SRCS:.c=.o)
 CC = gcc
+CFLAG = -Wall
 
-all: myshell
+myshell: ${OBJECTS}
+	${CC} -o ${EXEC} ${OBJECTS} ${CFLAG}
 
-myshell: myshell.c
-	gcc -o myshell myshell.c
+%.o : %.c Makefile
+	${CC} -c $< -o $@ ${CFLAG}
+
+clean : 
+	rm ${OBJECTS} ${EXEC}
+
